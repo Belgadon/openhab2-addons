@@ -561,6 +561,11 @@
         <feature>openhab-runtime-base</feature>
         <bundle start-level="80">mvn:org.openhab.binding/org.openhab.binding.tankerkoenig/${project.version}</bundle>
     </feature>
+    
+    <feature name="openhab-binding-telegram" description="Telegram Binding" version="${project.version}">
+        <feature>openhab-runtime-base</feature>
+        <bundle start-level="80">mvn:org.openhab.binding/org.openhab.binding.telegram/${project.version}</bundle>
+    </feature>
 
     <feature name="openhab-binding-tellstick" description="Tellstick Binding" version="${project.version}">
         <feature>openhab-runtime-base</feature>

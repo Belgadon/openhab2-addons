@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="telegram"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="telegramBot">
+		<label>Telegram Bot</label>
+		<description>Thing to receive the latest message send to a Telegram Bot.</description>
+
+		<channels>
+			<channel id="lastMessageText" typeId="lastMessageText" />
+			<channel id="lastMessageDate" typeId="lastMessageDate" />
+			<channel id="lastMessageName" typeId="lastMessageName" />
+			<channel id="lastMessageUsername" typeId="lastMessageUsername" />
+		</channels>
+
+		<config-description>
+			<parameter name="botToken" type="text" required="true">
+				<label>botToken</label>
+				<description>Enter the BotToken you received from the "BotFather".</description>
+			</parameter>
+			<parameter name="botUsername" type="text" required="true">
+                <label>botUsername</label>
+                <description>Enter the Name of your Bot.</description>
+            </parameter>
+            <parameter name="chatIds" type="integer" required="true" multiple="true">
+                <label>chatIds</label>
+                <description>Enter your ChatID. Only Messages from this ID will be send to OpenHAB. [TODO]: Enter multiple IDs.</description>
+            </parameter>
+		</config-description>
+
+	</thing-type>
+
+	<channel-type id="lastMessageText">
+		<item-type>String</item-type>
+		<label>Last Message Text</label>
+		<description>Contains the latest message text as a string</description>
+	</channel-type>
+	
+	<channel-type id="lastMessageDate">
+        <item-type>String</item-type>
+        <label>Last Message Date</label>
+        <description>Contains the latest message date as a string</description>
+    </channel-type>
+    
+    <channel-type id="lastMessageName">
+        <item-type>String</item-type>
+        <label>Last Message Name</label>
+        <description>Contains the latest message senders name as a string</description>
+    </channel-type>
+    
+    <channel-type id="lastMessageUsername">
+        <item-type>String</item-type>
+        <label>Last Message Username</label>
+        <description>Contains the latest message senders username as a string</description>
+    </channel-type>
+
+</thing:thing-descriptions>
