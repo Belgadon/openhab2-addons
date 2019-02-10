@@ -11,6 +11,7 @@ Bundle-Vendor: openHAB
 Bundle-Version: 2.4.0.qualifier
 Import-Package: 
  org.eclipse.jdt.annotation;resolution:=optional,
+ org.eclipse.smarthome.automation.annotation;resolution:=optional,
  org.eclipse.smarthome.config.core,
  org.eclipse.smarthome.core.cache,
  org.eclipse.smarthome.core.library.types,
@@ -20,6 +21,7 @@ Import-Package:
  org.eclipse.smarthome.core.thing.type,
  org.eclipse.smarthome.core.types,
  org.eclipse.smarthome.core.util,
+ org.openhab.binding.telegram.bot,
  org.slf4j
 Export-Package: 
  org.openhab.binding.telegram.bot

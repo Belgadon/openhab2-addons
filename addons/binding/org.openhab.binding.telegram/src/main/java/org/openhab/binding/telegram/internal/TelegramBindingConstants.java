@@ -30,4 +30,5 @@ public class TelegramBindingConstants {
     public static final String LASTMESSAGEDATE = "lastMessageDate";
     public static final String LASTMESSAGENAME = "lastMessageName";
     public static final String LASTMESSAGEUSERNAME = "lastMessageUsername";
+    public static final String REPLYID = "replyId";
 }

@@ -12,10 +12,16 @@ import static org.openhab.binding.telegram.internal.TelegramBindingConstants.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.telegram.internal.TelegramHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 /**
@@ -25,11 +31,19 @@ import org.telegram.telegrambots.meta.api.objects.Update;
  * @author Jens Runge - Initial contribution
  */
 public class TelegramBot extends TelegramLongPollingBot {
-    String botToken, botUsenName;
-    List<Integer> chatIds;
-    TelegramHandler telegramHandler;
+    private final String botToken, botUsenName;
+    private final List<Long> chatIds;
+    private final TelegramHandler telegramHandler;
+    private static final Logger logger = LoggerFactory.getLogger(TelegramBot.class);
+    // Keep track of the callback id created by Telegram. This must be sent back in the answerCallbackQuery
+    // to stop the progress bar in the Telegram client
+    // TODO: if selective chat ids are supported, replyId as a key is probably not sufficient
+    private final Map<String, String> replyIdToCallbackId = new HashMap<>();
+    // Keep track of message id sent with reply markup because we want to remove the markup after the user provided an
+    // answer and need the id of the original message
+    private final Map<String, Integer> replyIdToMessageId = new HashMap<>();
 
-    public TelegramBot(String botToken, String botUsenName, List<Integer> chatIds, TelegramHandler telegramHandler) {
+    public TelegramBot(String botToken, String botUsenName, List<Long> chatIds, TelegramHandler telegramHandler) {
         this.botToken = botToken;
         this.botUsenName = botUsenName;
         this.telegramHandler = telegramHandler;
@@ -44,15 +58,19 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        System.out.println(chatIds.toString());
+
         if (update.hasMessage() && update.getMessage().hasText()
         /* && update.getMessage().getChatId().intValue() == chatIds */) {
-            String lastMessageText = update.getMessage().getText();
+            Message message = update.getMessage();
+            if (!chatIds.contains(message.getChatId())) {
+                return; // this is very important regarding security to avoid commands from an unknown chat
+            }
+
+            String lastMessageText = message.getText();
             String lastMessageDate = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
-                    .format(new Date(update.getMessage().getDate().longValue() * 1000));
-            String lastMessageName = update.getMessage().getFrom().getFirstName() + " "
-                    + update.getMessage().getFrom().getLastName();
-            String lastMessageUsername = update.getMessage().getFrom().getUserName();
+                    .format(new Date(message.getDate().longValue() * 1000));
+            String lastMessageName = message.getFrom().getFirstName() + " " + message.getFrom().getLastName();
+            String lastMessageUsername = message.getFrom().getUserName();
 
             telegramHandler.updateChannel(LASTMESSAGETEXT, lastMessageText);
             telegramHandler.updateChannel(LASTMESSAGEDATE, lastMessageDate);
@@ -61,25 +79,52 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         } else if (update.hasCallbackQuery() && update.getCallbackQuery().getMessage().hasText()
         /* && update.getCallbackQuery().getMessage().getChatId().intValue() == chatIds */) {
+            // TODO: can it also happen for a callback that this was sent from an unknwon chat?
+            // replyId and answer is seperated by a space
+            String[] callbackData = update.getCallbackQuery().getData().split(" ", 2);
 
-            String lastMessageText = update.getCallbackQuery().getData();
-            String lastMessageDate = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(System.currentTimeMillis());
-            String lastMessageName = update.getCallbackQuery().getFrom().getFirstName() + " "
-                    + update.getCallbackQuery().getFrom().getLastName();
-            String lastMessageUsername = update.getCallbackQuery().getMessage().getFrom().getUserName();
+            if (callbackData.length == 2) {
+                String replyId = callbackData[0];
+                String lastMessageText = callbackData[1];
+                String lastMessageDate = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(System.currentTimeMillis());
+                String lastMessageName = update.getCallbackQuery().getFrom().getFirstName() + " "
+                        + update.getCallbackQuery().getFrom().getLastName();
+                String lastMessageUsername = update.getCallbackQuery().getMessage().getFrom().getUserName();
+                replyIdToCallbackId.put(replyId, update.getCallbackQuery().getId());
 
-            telegramHandler.updateChannel(LASTMESSAGETEXT, lastMessageText);
-            telegramHandler.updateChannel(LASTMESSAGEDATE, lastMessageDate);
-            telegramHandler.updateChannel(LASTMESSAGENAME, lastMessageName);
-            telegramHandler.updateChannel(LASTMESSAGEUSERNAME, lastMessageUsername);
+                telegramHandler.updateChannel(LASTMESSAGETEXT, lastMessageText);
+                telegramHandler.updateChannel(LASTMESSAGEDATE, lastMessageDate);
+                telegramHandler.updateChannel(LASTMESSAGENAME, lastMessageName);
+                telegramHandler.updateChannel(LASTMESSAGEUSERNAME, lastMessageUsername);
+                telegramHandler.updateChannel(REPLYID, replyId);
+            } else {
+                logger.warn("The received callback query {} has not the right format (must be seperated by spaces)",
+                        update.getCallbackQuery().getData());
+            }
         }
+    }
 
+    public List<Long> getChatIds() {
+        return chatIds;
     }
 
     @Override
     public String getBotToken() {
         // TODO Auto-generated method stub
         return botToken;
+    }
+
+    @Nullable
+    public String getCallbackId(String replyId) {
+        return replyIdToCallbackId.get(replyId);
+    }
+
+    public void addMessageId(String replyId, Integer messageId) {
+        replyIdToMessageId.put(replyId, messageId);
+    }
+
+    public Integer removeMessageId(String replyId) {
+        return replyIdToMessageId.remove(replyId);
     }
 
 }

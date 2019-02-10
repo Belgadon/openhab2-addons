@@ -8,6 +8,9 @@
  */
 package org.openhab.binding.telegram.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -17,8 +20,17 @@ import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.eclipse.smarthome.core.thing.binding.ThingHandlerService;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.telegram.bot.TelegramActions;
+import org.openhab.binding.telegram.bot.TelegramBot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.telegram.telegrambots.ApiContextInitializer;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.BotSession;
 
 /**
  * The {@link TelegramHandler} is responsible for handling commands, which are
@@ -29,17 +41,15 @@ import org.eclipse.smarthome.core.types.State;
 @NonNullByDefault
 public class TelegramHandler extends BaseThingHandler {
 
+    private final Logger logger = LoggerFactory.getLogger(TelegramHandler.class);
     @Nullable
-    private TelegramConfiguration config;
+    private TelegramBot bot;
+    @Nullable
+    private BotSession session;
 
     public TelegramHandler(Thing thing) {
         super(thing);
     }
-
-    @Nullable
-    private String botName, botToken;
-    @Nullable
-    private List<Integer> chatIds;
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
@@ -57,11 +67,10 @@ public class TelegramHandler extends BaseThingHandler {
         // }
     }
 
-    @SuppressWarnings("null")
     @Override
     public void initialize() {
         // logger.debug("Start initializing!");
-        config = getConfigAs(TelegramConfiguration.class);
+        TelegramConfiguration config = getConfigAs(TelegramConfiguration.class);
 
         // TODO: Initialize the handler.
         // The framework requires you to return from this method quickly. Also, before leaving this method a thing
@@ -75,27 +84,54 @@ public class TelegramHandler extends BaseThingHandler {
         // the framework is then able to reuse the resources from the thing handler initialization.
         // we set this upfront to reliably check status updates in unit tests.
         updateStatus(ThingStatus.ONLINE);
-        botName = config.getBotUsername();
-        botToken = config.getBotToken();
-        chatIds = config.getChatIds();
+        String botName = config.getBotUsername();
+        String botToken = config.getBotToken();
+        List<Long> chatIds = new ArrayList<>();
+        for (String chatIdStr : config.getChatIds()) {
+            try {
+                chatIds.add(Long.parseLong(chatIdStr));
+            } catch (NumberFormatException e) {
+                logger.warn("The chat id {} is not a number and will be ignored", chatIdStr);
+            }
+        }
 
-        System.out.println(chatIds);
-        /*
-         * ApiContextInitializer.init();
-         *
-         * TelegramBotsApi botsApi = new TelegramBotsApi();
-         *
-         * try {
-         * botsApi.registerBot(new TelegramBot(botToken, botName, chatIds, this));
-         * updateStatus(ThingStatus.ONLINE);
-         * } catch (TelegramApiException e) {
-         * updateStatus(ThingStatus.OFFLINE);
-         * }
-         */
+        ApiContextInitializer.init();
+        TelegramBotsApi botsApi = new TelegramBotsApi();
+        try {
+            bot = new TelegramBot(botToken, botName, chatIds, this);
+            session = botsApi.registerBot(bot);
+            updateStatus(ThingStatus.ONLINE);
+        } catch (TelegramApiException e) {
+            updateStatus(ThingStatus.OFFLINE);
+        }
+    }
+
+    @Override
+    public void dispose() {
+        // if (session != null) {
+        // BotSession s = session;
+        // //TODO: this code is currently not usable, because stopping the botsession takes a very long time (see
+        // https://github.com/rubenlagus/TelegramBots/issues/498), but the current thread context is not allowed to
+        // wait.
+        // if (s.isRunning()) {
+        // s.stop();
+        // }
+        // }
     }
 
     public void updateChannel(String channelName, String stateString) {
         State messageState = new StringType(stateString);
         updateState(new ChannelUID(getThing().getUID(), channelName), messageState);
     }
+
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return Collections.singleton(TelegramActions.class);
+    }
+
+    @Nullable
+    public TelegramBot getBot() {
+        return bot;
+    }
+
 }

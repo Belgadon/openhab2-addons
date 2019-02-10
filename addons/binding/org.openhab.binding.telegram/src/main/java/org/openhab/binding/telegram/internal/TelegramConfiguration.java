@@ -21,8 +21,7 @@ public class TelegramConfiguration {
      * Sample configuration parameter. Replace with your own.
      */
     private String botUsername, botToken;
-    private List<Integer> chatIds;
-    // private List chatIds;
+    private List<String> chatIds;
 
     public String getBotUsername() {
         return botUsername;
@@ -32,7 +31,7 @@ public class TelegramConfiguration {
         return botToken;
     }
 
-    public List<Integer> getChatIds() {
+    public List<String> getChatIds() {
         return chatIds;
     }
 
