@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.openhab.binding.telegram.internal.TelegramHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
  * @author Jens Runge - Initial contribution
  */
 public class TelegramBot extends TelegramLongPollingBot {
-    private final String botToken, botUsenName;
+    private final String botToken, botUserName;
     private final List<Long> chatIds;
     private final TelegramHandler telegramHandler;
     private static final Logger logger = LoggerFactory.getLogger(TelegramBot.class);
@@ -43,24 +44,24 @@ public class TelegramBot extends TelegramLongPollingBot {
     // answer and need the id of the original message
     private final Map<String, Integer> replyIdToMessageId = new HashMap<>();
 
-    public TelegramBot(String botToken, String botUsenName, List<Long> chatIds, TelegramHandler telegramHandler) {
+    public TelegramBot(HttpClient httpClient, String botToken, String botUsenName, List<Long> chatIds,
+            TelegramHandler telegramHandler) {
+        super(httpClient);
         this.botToken = botToken;
-        this.botUsenName = botUsenName;
+        this.botUserName = botUsenName;
         this.telegramHandler = telegramHandler;
         this.chatIds = chatIds;
     }
 
     @Override
     public String getBotUsername() {
-        // TODO Auto-generated method stub
-        return botUsenName;
+        return botUserName;
     }
 
     @Override
     public void onUpdateReceived(Update update) {
 
-        if (update.hasMessage() && update.getMessage().hasText()
-        /* && update.getMessage().getChatId().intValue() == chatIds */) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
             Message message = update.getMessage();
             if (!chatIds.contains(message.getChatId())) {
                 return; // this is very important regarding security to avoid commands from an unknown chat
@@ -110,7 +111,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        // TODO Auto-generated method stub
         return botToken;
     }
 

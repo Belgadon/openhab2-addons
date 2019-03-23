@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -47,8 +48,11 @@ public class TelegramHandler extends BaseThingHandler {
     @Nullable
     private BotSession session;
 
-    public TelegramHandler(Thing thing) {
+    private final HttpClient httpClient;
+
+    public TelegramHandler(Thing thing, HttpClient httpClient) {
         super(thing);
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -98,7 +102,7 @@ public class TelegramHandler extends BaseThingHandler {
         ApiContextInitializer.init();
         TelegramBotsApi botsApi = new TelegramBotsApi();
         try {
-            bot = new TelegramBot(botToken, botName, chatIds, this);
+            bot = new TelegramBot(httpClient, botToken, botName, chatIds, this);
             session = botsApi.registerBot(bot);
             updateStatus(ThingStatus.ONLINE);
         } catch (TelegramApiException e) {
@@ -108,15 +112,12 @@ public class TelegramHandler extends BaseThingHandler {
 
     @Override
     public void dispose() {
-        // if (session != null) {
-        // BotSession s = session;
-        // //TODO: this code is currently not usable, because stopping the botsession takes a very long time (see
-        // https://github.com/rubenlagus/TelegramBots/issues/498), but the current thread context is not allowed to
-        // wait.
-        // if (s.isRunning()) {
-        // s.stop();
-        // }
-        // }
+        if (session != null) {
+            BotSession s = session;
+            if (s.isRunning()) {
+                s.stop();
+            }
+        }
     }
 
     public void updateChannel(String channelName, String stateString) {

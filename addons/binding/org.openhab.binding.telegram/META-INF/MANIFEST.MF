@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Automatic-Module-Name: org.openhab.binding.telegram;x-internal:=true
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- lib/telegrambots-4.1-jar-with-dependencies.jar
+ lib/telegrambots-4.1.2-jar-with-dependencies.jar
 Bundle-ManifestVersion: 2
 Bundle-Name: Telegram Binding
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
@@ -11,6 +11,12 @@ Bundle-Vendor: openHAB
 Bundle-Version: 2.4.0.qualifier
 Import-Package: 
  org.eclipse.jdt.annotation;resolution:=optional,
+ org.eclipse.jetty.client,
+ org.eclipse.jetty.client.api,
+ org.eclipse.jetty.client.util,
+ org.eclipse.jetty.http,
+ org.eclipse.jetty.util,
+ org.eclipse.jetty.util.ssl,
  org.eclipse.smarthome.automation.annotation;resolution:=optional,
  org.eclipse.smarthome.config.core,
  org.eclipse.smarthome.core.cache,
@@ -21,6 +27,7 @@ Import-Package:
  org.eclipse.smarthome.core.thing.type,
  org.eclipse.smarthome.core.types,
  org.eclipse.smarthome.core.util,
+ org.eclipse.smarthome.io.net.http,
  org.openhab.binding.telegram.bot,
  org.slf4j
 Export-Package: 
